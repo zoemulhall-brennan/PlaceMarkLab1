@@ -38,5 +38,7 @@ class MainActivity : AppCompatActivity() {
                 Intent(this, AddEditActivity::class.java)
             )
         }
+
+        AppData.initialize(this)
     }
 }

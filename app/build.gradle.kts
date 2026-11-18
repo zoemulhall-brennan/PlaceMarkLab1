@@ -9,7 +9,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.mad_placemarklab1"
+        applicationId = "setu.mad_placemarklab1"
         minSdk = 24
         targetSdk = 37
         versionCode = 1
@@ -41,4 +41,7 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
+    implementation("com.google.code.gson:gson:2.13.2")
+    implementation("org.osmdroid:osmdroid-android:6.1.20")
+
 }
