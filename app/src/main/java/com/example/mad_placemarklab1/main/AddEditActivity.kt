@@ -4,10 +4,13 @@ package com.example.mad_placemarklab1
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.mad_placemarklab1.models.PlacedMark
+import android.net.Uri
+import android.widget.ImageView
+import androidx.activity.result.contract.ActivityResultContracts
+import android.content.Intent
 
 
 class AddEditActivity : AppCompatActivity() {
@@ -17,7 +20,12 @@ class AddEditActivity : AppCompatActivity() {
     private lateinit var xInput: EditText
     private lateinit var yInput: EditText
 
+    private lateinit var imagePreview: ImageView
+    private var selectedImageUri: Uri? = null
+
+
     private var editingId: Long? = null
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,6 +43,9 @@ class AddEditActivity : AppCompatActivity() {
 
         yInput =
             findViewById(R.id.yEditText)
+        imagePreview =
+            findViewById(R.id.imageViewAdd)
+
 
         val saveButton =
             findViewById<Button>(R.id.okButton)
@@ -50,6 +61,48 @@ class AddEditActivity : AppCompatActivity() {
 
             loadExistingMark(editingId!!)
         }
+        val imagePicker =
+            registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+                if (uri != null) {
+                    // Keep access to the document URI for later use, when supported.
+                    try {
+                        contentResolver.takePersistableUriPermission(
+                            uri,
+                            android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        )
+                    } catch (_: SecurityException) {
+                        // Some providers may not grant persistable access.
+                    }
+                    selectedImageUri = uri
+                    imagePreview.setImageURI(uri)
+                }
+            }
+        findViewById<Button>(R.id.imagePickButton).setOnClickListener {
+            imagePicker.launch(arrayOf("image/*"))
+        }
+
+        val mapPicker =
+            registerForActivityResult(
+                ActivityResultContracts.StartActivityForResult()
+            ) { result ->
+                if (result.resultCode == RESULT_OK) {
+                    val data = result.data ?: return@registerForActivityResult
+                    val selectedLatitude = data.getDoubleExtra("latitude", 0.0)
+                    val selectedLongitude = data.getDoubleExtra("longitude", 0.0)
+
+                    selectedLatitude?.let {
+                        xInput.setText(it.toString())
+                    }
+
+                    selectedLongitude?.let {
+                        yInput.setText(it.toString())
+                    }
+                }
+            }
+        findViewById<Button>(R.id.pickLocationButton).setOnClickListener {
+            val intent = Intent(this, MapPickerActivity::class.java)
+            mapPicker.launch(intent)
+        }
 
         saveButton.setOnClickListener {
             saveMark()
@@ -59,6 +112,7 @@ class AddEditActivity : AppCompatActivity() {
             finish()
         }
     }
+
 
     private fun loadExistingMark(id: Long) {
 
@@ -81,6 +135,14 @@ class AddEditActivity : AppCompatActivity() {
         descriptionInput.setText(mark.desc)
         xInput.setText(mark.x.toString())
         yInput.setText(mark.y.toString())
+        selectedImageUri = mark.imageUri?.let { Uri.parse(it) }
+
+        if (selectedImageUri != null) {
+            imagePreview.setImageURI(selectedImageUri)
+        } else {
+            imagePreview.setImageResource(android.R.drawable.ic_menu_gallery)
+        }
+
     }
 
     private fun saveMark() {
@@ -118,7 +180,8 @@ class AddEditActivity : AppCompatActivity() {
                 title = title,
                 desc = description,
                 x = x,
-                y = y
+                y = y,
+                imageUri = selectedImageUri?.toString()
             )
 
             AppData.placedMarks.create(mark)
@@ -136,7 +199,8 @@ class AddEditActivity : AppCompatActivity() {
                 title = title,
                 desc = description,
                 x = x,
-                y = y
+                y = y,
+                imageUri = selectedImageUri?.toString()
             )
 
             AppData.placedMarks.update(mark)
